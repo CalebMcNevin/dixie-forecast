@@ -83,10 +83,12 @@ for i, account in enumerate(accounts.account_number):
     print(f'Forecasting {account}...', end='', flush=True)
 
     # Filter invoices for current account, and resample on monthly basis
+    #* Note: The "clamp" is used to clamp the end date of the resampled
+    #* dataframe to the end date we want, instead of the most recent sale.
     raw_sales_df = invoices[invoices.account_number == account]
     end_clamp = pd.Series(
         [account, 'clamp', 0, 0],
-        name=dt.datetime.today(),
+        name=dt.datetime.strptime('2020-11-30', '%Y-%m-%d'),
         index=['account_number', 'part_number', 'NetQty', 'NetExchange'])
     clamped_sales_df = raw_sales_df.append(end_clamp)
     clamped_sales_df.index = pd.to_datetime(clamped_sales_df.index)
@@ -105,19 +107,29 @@ for i, account in enumerate(accounts.account_number):
     # Create and fit model, and forecast for 12 months
     mod = ThetaModel(endog, deseasonalize=(len(endog) >= 24))
     res = mod.fit(disp=0)
-    fcast = res.forecast(12)
+    fcast = res.forecast(16)
 
     # Plot forecast data
-    # res.plot_predict(
-    #     12,
-    #     alpha=0.2,
-    #     in_sample=True,
-    # )
-    # endog['2016-01-01':].plot()
-    # plt.title(account)
-    # plt.xlabel('Date')
-    # plt.ylabel('Net Exchange')
-    # plt.show()
+    try:
+        res.plot_predict(
+            16,
+            alpha=0.2,
+            in_sample=True,
+        )
+        plt.hlines(y=0,
+                   xmin=dt.datetime.strptime('2016-01-01', '%Y-%m-%d'),
+                   xmax=dt.datetime.strptime('2022-04-01', '%Y-%m-%d'))
+        # endog['2016-01-01':].plot()
+        plt.xlim((dt.datetime.strptime('2016-01-01', '%Y-%m-%d'),
+                  dt.datetime.strptime('2022-04-01', '%Y-%m-%d')))
+        plt.title(account)
+        plt.xlabel('Date')
+        plt.ylabel('Net Exchange')
+
+        plt.savefig(f'./figures/{account}.png')
+        plt.close()
+    except:
+        print(f'Failed to plot for account {account}.')
 
     # Save forecast data to results
     fcast.index = pd.to_datetime(fcast.index)
