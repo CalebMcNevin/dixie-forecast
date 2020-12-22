@@ -6,8 +6,9 @@ WITH SLS AS (
 		  ,proc_date
 		  ,part_number
 		  ,SUM(qty) Qty
-		  ,SUM(exchange_total) ExchangeTotal
-	FROM Sales.AllInvoicesSuper
+		  ,SUM(CASE A.Currency WHEN 'USD' THEN 1.3 * exchange_total ELSE exchange_total END) ExchangeTotal
+	FROM Sales.AllInvoicesSuper AI
+	LEFT JOIN Sales.Accounts A ON AI.account_number = A.CustomerCode
 	WHERE proc_date BETWEEN @startDate AND @endDate
 	AND transaction_type != 'C'
 	GROUP BY account_number, proc_date, part_number
