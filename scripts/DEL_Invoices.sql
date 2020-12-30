@@ -20,5 +20,4 @@ SELECT SLS.account_number
 	  ,COALESCE(SLS.ExchangeTotal, 0) NetExchange
 FROM SLS
 LEFT JOIN Production.Parts P ON SLS.part_number = P.PartNumber
-WHERE P.FinishedGood = 1
 ORDER BY SLS.proc_date;
